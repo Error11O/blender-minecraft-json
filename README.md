@@ -9,8 +9,8 @@ Tested on Blender 2.83, 2.92, 5.1.2.
 
 Installation
 ---------------------------------------
-1. `git clone` or copy this repository into your `scripts/addons` or custom scripts folder.
-2. Enable in **Edit > Preferences > Add-ons** (search for *Minecraft JSON Import/Export*)
+1. `git clone` or click green button in github and click download as zip, make sure the project is zipped.
+2. Goto **Edit > Preferences > Add-ons** click dropdown arrow and click **install from disk** then select the project as a zip file and enable it.
 
 
 Export Guide 
