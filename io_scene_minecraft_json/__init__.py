@@ -27,7 +27,6 @@ class ImportMinecraftJSON(Operator, ImportHelper):
     filter_glob: StringProperty(
         default="*.json",
         options={"HIDDEN"},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
 
     import_uvs: BoolProperty(
@@ -65,7 +64,6 @@ class ExportMinecraftJSON(Operator, ExportHelper):
     filter_glob: StringProperty(
         default="*.json",
         options={"HIDDEN"},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
 
     selection_only: BoolProperty(
@@ -154,6 +152,34 @@ class ExportMinecraftJSON(Operator, ExportHelper):
         name="Export animations",
         description="Export bone animation keyframes into .json file",
         default=False,
+    )
+
+    # ================================
+    # display transform options
+    display_preset: EnumProperty(
+        name="Display Preset",
+        description="Add display transforms to the exported model",
+        items=[
+            ("NONE",      "None",      "No display block"),
+            ("ITEM",      "Item (3D)", "Standard 3D item display transforms"),
+            ("BLOCK",     "Block",     "Standard block display transforms"),
+            ("HEAD_ONLY", "Head Only", "Legacy head-scale-only (armor stand compensation)"),
+        ],
+        default="NONE",
+    )
+
+    # ================================
+    # 1.21.2+ item definition options
+    generate_item_definition: BoolProperty(
+        name="Generate Item Definition",
+        description="Write a 1.21.2+ items/<name>.json definition file alongside the model",
+        default=False,
+    )
+
+    item_namespace: StringProperty(
+        name="Namespace",
+        description="Resource-pack namespace for the item definition (e.g. minecraft or mynamespace)",
+        default="minecraft",
     )
 
     def execute(self, context):
@@ -270,6 +296,58 @@ class JSON_PT_export_animation(bpy.types.Panel):
         layout.prop(operator, "export_bones")
         layout.prop(operator, "export_animation")
 
+
+# export options panel for display transforms
+class JSON_PT_export_display(bpy.types.Panel):
+    bl_space_type = "FILE_BROWSER"
+    bl_region_type = "TOOL_PROPS"
+    bl_label = "Display Transforms"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "MINECRAFT_OT_export_json"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "display_preset")
+
+
+# export options panel for 1.21.2+ item definition
+class JSON_PT_export_item_def(bpy.types.Panel):
+    bl_space_type = "FILE_BROWSER"
+    bl_region_type = "TOOL_PROPS"
+    bl_label = "Item Definition (1.21.2+)"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "MINECRAFT_OT_export_json"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "generate_item_definition")
+        col = layout.column()
+        col.enabled = operator.generate_item_definition
+        col.prop(operator, "item_namespace")
+
+
 # add io to menu
 def menu_func_import(self, context):
     self.layout.operator(ImportMinecraftJSON.bl_idname, text="Minecraft (.json)")
@@ -285,6 +363,8 @@ classes = [
     JSON_PT_export_textures,
     JSON_PT_export_minify,
     JSON_PT_export_animation,
+    JSON_PT_export_display,
+    JSON_PT_export_item_def,
 ]
 
 def register():

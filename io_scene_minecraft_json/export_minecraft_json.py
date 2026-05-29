@@ -7,6 +7,7 @@ from math import inf
 import posixpath # need "/" separator
 import os
 import json
+import copy
 
 # minecraft model coordinates must be from [-16, 32] (48x48x48 volume)
 # -> 24 along each axis
@@ -331,6 +332,9 @@ def save_objects(
     export_uvs=True,
     minify=False,
     decimal_precision=-1,
+    display_preset="NONE",
+    generate_item_definition=False,
+    item_namespace="minecraft",
     **kwargs):
     """Main exporter function. Parses Blender objects into Minecraft
     cuboid format, uvs, and handles texture read and generation.
@@ -736,6 +740,46 @@ def save_objects(
             }
     else:
         rescale_factor = 1.0
+
+    # ===========================
+    # display transform presets
+    # ===========================
+    _DISPLAY_ITEM = {
+        "thirdperson_righthand": {"rotation": [75, 45, 0],  "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+        "thirdperson_lefthand":  {"rotation": [75, 45, 0],  "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+        "firstperson_righthand": {"rotation": [0, 45, 0],   "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4]},
+        "firstperson_lefthand":  {"rotation": [0, 225, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4]},
+        "gui":                   {"rotation": [30, 225, 0], "translation": [0, 0, 0],   "scale": [0.625, 0.625, 0.625]},
+        "head":                  {"rotation": [0, 0, 0],    "translation": [0, 13, 7],  "scale": [1, 1, 1]},
+        "ground":                {"rotation": [0, 0, 0],    "translation": [0, 2, 0],   "scale": [0.25, 0.25, 0.25]},
+        "fixed":                 {"rotation": [0, 0, 0],    "translation": [0, 0, 0],   "scale": [0.5, 0.5, 0.5]},
+    }
+    _DISPLAY_BLOCK = {
+        "thirdperson_righthand": {"rotation": [75, 45, 0],  "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+        "thirdperson_lefthand":  {"rotation": [75, 45, 0],  "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+        "firstperson_righthand": {"rotation": [0, 45, 0],   "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4]},
+        "firstperson_lefthand":  {"rotation": [0, 45, 0],   "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4]},
+        "gui":                   {"rotation": [30, 225, 0], "translation": [0, 0, 0],   "scale": [0.625, 0.625, 0.625]},
+        "ground":                {"rotation": [0, 3, 0],    "translation": [0, 0, 0],   "scale": [0.25, 0.25, 0.25]},
+        "fixed":                 {"rotation": [0, 0, 0],    "translation": [0, 0, 0],   "scale": [0.5, 0.5, 0.5]},
+    }
+
+    if display_preset == "ITEM":
+        display_block = copy.deepcopy(_DISPLAY_ITEM)
+        # if model was too large and needed upscaling compensation, scale all slots
+        if "display" in model_json and "head" in model_json["display"]:
+            s = model_json["display"]["head"]["scale"][0]
+            for slot in display_block.values():
+                slot["scale"] = [v * s for v in slot["scale"]]
+        model_json["display"] = display_block
+    elif display_preset == "BLOCK":
+        display_block = copy.deepcopy(_DISPLAY_BLOCK)
+        if "display" in model_json and "head" in model_json["display"]:
+            s = model_json["display"]["head"]["scale"][0]
+            for slot in display_block.values():
+                slot["scale"] = [v * s for v in slot["scale"]]
+        model_json["display"] = display_block
+    # HEAD_ONLY and NONE: keep whatever was set above (or nothing)
         
     # debug
     print("RESCALE", rescale_factor)
@@ -889,6 +933,23 @@ def save_objects(
     # save json
     with open(filepath, "w") as f:
         json.dump(model_json, f, separators=(",", ":"))
+
+    # ===========================
+    # 1.21.2+ item definition file
+    # ===========================
+    if generate_item_definition:
+        model_name = os.path.splitext(os.path.basename(filepath))[0]
+        items_dir = os.path.join(os.path.dirname(filepath), "items")
+        os.makedirs(items_dir, exist_ok=True)
+        item_def = {
+            "model": {
+                "type": "minecraft:model",
+                "model": f"{item_namespace}:item/{model_name}",
+            }
+        }
+        item_def_path = os.path.join(items_dir, model_name + ".json")
+        with open(item_def_path, "w") as f:
+            json.dump(item_def, f, separators=(",", ":"))
 
 
 def save(context,

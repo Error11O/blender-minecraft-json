@@ -1,10 +1,10 @@
 bl_info = {
     "name": "Minecraft JSON Import/Export",
     "author": "phonon",
-    "version": (0, 4, 0),
-    "blender": (2, 83, 0),
+    "version": (0, 5, 0),
+    "blender": (4, 2, 0),
     "location": "View3D",
-    "description": "Minecraft JSON import/export",
+    "description": "Minecraft JSON import/export with 1.21.2+ item definition support",
     "warning": "",
     "tracker_url": "https://github.com/phonon/blender-minecraft-json",
     "category": "Minecraft",

@@ -1,0 +1,9 @@
+schema_version = "1.0.0"
+id = "blender_minecraft_json"
+version = "0.5.0"
+name = "Minecraft JSON Import/Export"
+tagline = "Import and export Minecraft Java Edition model JSON files"
+maintainer = "phonon"
+type = "add-on"
+blender_version_min = "4.2.0"
+license = ["SPDX:MIT"]
